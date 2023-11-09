@@ -5,7 +5,7 @@ from . import events_manager
 from . import calendar
 
 
-EVENTS_FORUM_NAME = "whoops"
+EVENTS_FORUM_NAME = "events"
 
 
 class EventsBotClient(discord.Client):

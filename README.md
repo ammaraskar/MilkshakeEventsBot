@@ -4,7 +4,7 @@ Syncs events from an events forum to a Google calendar and bumps them when the e
 
 Looks for threads following the pattern `MM/DD` in a forum called `events` and
 turns them into calendar events. Storage is in a flat json file called
-`events.json`.
+`db.json`.
 
 ## Setup
 

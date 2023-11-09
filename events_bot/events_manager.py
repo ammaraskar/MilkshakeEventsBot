@@ -104,6 +104,11 @@ class EventStorage:
     def add_event(self, event):
         self.events_by_id[event.event_id] = event
         self.events.append(event)
+        self.store_events()
+
+    def store_events(self):
+        # This is in-memory so does nothing but subclasses can overload this.
+        pass
 
 
 class NewlineDelimitedJsonEventStorage(EventStorage):
@@ -125,9 +130,7 @@ class NewlineDelimitedJsonEventStorage(EventStorage):
                 self.events_by_id[event.event_id] = event
                 self.events.append(event)
 
-    def add_event(self, event):
-        super().add_event(event)
-
+    def store_events(self):
         # Write all the events out.
         with open(self.file_path, "w") as f:
             for event in self.events:

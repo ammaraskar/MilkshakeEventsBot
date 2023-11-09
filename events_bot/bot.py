@@ -1,13 +1,24 @@
+import traceback
 import discord
+import requests
 from . import events_manager
+from . import calendar
 
 
 EVENTS_FORUM_NAME = "whoops"
 
 
 class EventsBotClient(discord.Client):
-    def __init__(self, event_storage: events_manager.EventStorage):
+    def __init__(
+        self,
+        event_storage: events_manager.EventStorage,
+        calendar: calendar.Calendar = None,
+    ):
+        """Creates an instance of the bot, takes an event_storage to put events
+        into based on threads. Optionally takes a calendar to create calendar
+        events."""
         self.event_storage = event_storage
+        self.calendar = calendar
 
         intents = discord.Intents.default()
         intents.guilds = True
@@ -58,5 +69,26 @@ Discord Thread ID: {thread.id}"""
             thread_creation_date=thread.created_at.date(),
             description=description,
         )
-        if event is not None:
-            print(f"Made new event: {event}")
+        if event is None:
+            return
+        print(f"Potential new event: {event}")
+        if event.calendar_id is not None:
+            print("  - Event already on calendar, skipping")
+            return
+        if self.calendar is None:
+            print("  - No calendar instance, skipping")
+            return
+
+        try:
+            calendar_id = self.calendar.make_calendar_event(
+                date=event.date,
+                title=event.title,
+                description=event.description,
+            )
+            print(f"  + Event created with id: {calendar_id}")
+            event.calendar_id = calendar_id
+
+            self.event_storage.store_events()
+        except requests.RequestException:
+            print("Error adding event to calendar")
+            traceback.print_exc()

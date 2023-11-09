@@ -146,3 +146,24 @@ def test_flat_file_storage_writes_event_to_file(tmp_path):
         output_file
         == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!","date":"2023-01-01","calendar_id":null}\n'
     )
+
+
+def test_flat_file_storage_updates_existing_event(tmp_path):
+    db_path = tmp_path / "db.json"
+    storage = events_manager.NewlineDelimitedJsonEventStorage(db_path)
+
+    event = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="1/1 I will update",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        description="Description",
+    )
+
+    event.calendar_id = "CAL-123"
+    storage.store_events()
+
+    output_file = db_path.read_text()
+    assert (
+        output_file
+        == '{"event_id":"1","title":"I will update","description":"Description","date":"2023-01-01","calendar_id":"CAL-123"}\n'
+    )

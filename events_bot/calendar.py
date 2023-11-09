@@ -9,8 +9,17 @@ class Calendar:
         self.app_script_url = app_script_url
         self.app_script_token = app_script_token
 
-    def make_calendar_event(self, date, title, description):
+    def make_calendar_event(self, date: datetime.date, title: str, description: str):
         """Makes a calendar event returning its created id if successful."""
         body = {
             "token": self.app_script_token,
+            "date": date.isoformat(),
+            "title": title,
+            "description": description,
         }
+        r = requests.post(self.app_script_url, json=body)
+
+        response = r.json()
+        if "error" in response:
+            raise RuntimeError(f"Error from calendar endpoint: {response}")
+        return response["event_id"]

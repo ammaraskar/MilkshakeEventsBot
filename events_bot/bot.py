@@ -6,6 +6,15 @@ EVENTS_FORUM_NAME = "whoops"
 
 
 class EventsBotClient(discord.Client):
+    def __init__(self, event_storage: events_manager.EventStorage):
+        self.event_storage = event_storage
+
+        intents = discord.Intents.default()
+        intents.guilds = True
+        # Required to get the contents of the first message in a thread.
+        intents.message_content = True
+        super().__init__(intents=intents)
+
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
 
@@ -33,10 +42,11 @@ class EventsBotClient(discord.Client):
         # Get the first message of the thread. And yup, the first message's id
         # is the same as the thread id. ¯\_(ツ)_/¯
         first_message = await thread.fetch_message(thread.id)
-        events_manager.maybe_create_new_event_from_thread(thread, first_message)
-
-
-intents = discord.Intents.default()
-intents.guilds = True
-
-client = EventsBotClient(intents=intents)
+        event = self.event_storage.try_create_new_event_from_thread(
+            thread_id=str(thread.id),
+            thread_title=thread.name,
+            thread_creation_date=thread.created_at.date(),
+            first_message=first_message.content,
+        )
+        if event is not None:
+            print(f"Made new event: {event}")

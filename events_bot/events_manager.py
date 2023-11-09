@@ -2,6 +2,7 @@ import datetime
 import traceback
 import json
 from pydantic import BaseModel
+from typing import Optional
 
 
 class Event(BaseModel):
@@ -11,13 +12,20 @@ class Event(BaseModel):
     title: str
     description: str
     date: datetime.date
+    # Defaults to None, filled when we create a corresponding calendar event.
+    calendar_id: Optional[str] = None
 
 
 def create_event_object_from_thread(
     thread_id, thread_title, thread_creation_date, first_message
 ):
     (date, title) = try_get_date_title_for_event(thread_creation_date, thread_title)
-    return Event(event_id=thread_id, title=title, description=first_message, date=date)
+    return Event(
+        event_id=thread_id,
+        title=title,
+        description=first_message + f"\n\nDiscord Thread ID: {thread_id}",
+        date=date,
+    )
 
 
 def extract_day_and_month_from_title(title: str):
@@ -70,10 +78,13 @@ class EventStorage:
         self, thread_id, thread_title, thread_creation_date, first_message
     ):
         """Creates a new event based on the thread's details. If successful,
-        returns the Event object. If the event already exists or the thread
-        is not parseable to an event, returns None."""
+        returns the Event object. If the event already exists, returns the
+        updated version of the existing event.
+
+        If the thread is not parseable to an event, returns None."""
         if thread_id in self.events_by_id:
-            return None
+            return self.events_by_id[thread_id]
+
         print(f"Trying to create new event:")
         print(f"  Thread ID: {thread_id}")
         print(f"      Title: {thread_title}")
@@ -102,20 +113,23 @@ class NewlineDelimitedJsonEventStorage(EventStorage):
     def __init__(self, file_path):
         super().__init__()
 
-        self.file = open(file_path, "a+")
-        self.file.seek(0)
-        for line in self.file:
-            # Skip empty lines.
-            if line.strip() == "":
-                continue
+        self.file_path = file_path
+        with open(self.file_path, "a+") as f:
+            f.seek(0)
+            for line in f:
+                # Skip empty lines.
+                if line.strip() == "":
+                    continue
 
-            event = Event.model_validate_json(line)
-            self.events_by_id[event.event_id] = event
-            self.events.append(event)
+                event = Event.model_validate_json(line)
+                self.events_by_id[event.event_id] = event
+                self.events.append(event)
 
     def add_event(self, event):
-        # Write and flush to the flat file.
-        self.file.write(event.model_dump_json())
-        self.file.write("\n")
-        self.file.flush()
         super().add_event(event)
+
+        # Write all the events out.
+        with open(self.file_path, "w") as f:
+            for event in self.events:
+                f.write(event.model_dump_json())
+                f.write("\n")

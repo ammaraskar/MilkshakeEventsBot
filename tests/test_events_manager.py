@@ -80,7 +80,7 @@ def test_event_storage_creates_new_event():
     assert storage.events[0] == created_event
     assert storage.events[0].event_id == "1"
     assert storage.events[0].title == "Post New Years"
-    assert storage.events[0].description == "Come to\nhell!!!"
+    assert storage.events[0].description == "Come to\nhell!!!\n\nDiscord Thread ID: 1"
     assert storage.events[0].date == datetime.date(2023, 1, 1)
 
 
@@ -96,11 +96,13 @@ def test_event_storage_returns_none_on_duplicate_event():
 
     event_again = storage.try_create_new_event_from_thread(
         thread_id="1",
-        thread_title="1/1 Post New Years",
+        thread_title="1/1 No No No",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="Come to\nhell!!!",
+        first_message="My bad",
     )
-    assert event_again is None
+    # Should just return the initial event. In the future this may update the
+    # existing event.
+    assert event_again == created_event
 
 
 def test_event_storage_returns_none_on_unparsable_event():
@@ -114,15 +116,14 @@ def test_event_storage_returns_none_on_unparsable_event():
     assert event is None
 
 
-STORAGE_WITH_EXISTING_EVENTS = """\
+def test_flat_file_storage_loads_existing_events(tmp_path):
+    existing_events = """\
 {"event_id": "1", "title": "Hi", "description": "come to my event", "date": "2022-01-01"}
 {"event_id": "2", "title": "Bye", "description": "that was fun", "date": "2022-02-01"}
 """
 
-
-def test_flat_file_storage_loads_existing_events(tmp_path):
     db_path = tmp_path / "db.json"
-    db_path.write_text(STORAGE_WITH_EXISTING_EVENTS)
+    db_path.write_text(existing_events)
 
     storage = events_manager.NewlineDelimitedJsonEventStorage(db_path)
     assert len(storage.events) == 2
@@ -143,5 +144,5 @@ def test_flat_file_storage_writes_event_to_file(tmp_path):
     output_file = db_path.read_text()
     assert (
         output_file
-        == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!","date":"2023-01-01"}\n'
+        == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!\\n\\nDiscord Thread ID: 1","date":"2023-01-01","calendar_id":null}\n'
     )

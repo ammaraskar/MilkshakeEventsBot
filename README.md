@@ -24,7 +24,7 @@ turns them into calendar events. Storage is in a flat json file called
 
 2. Install dev dependencies `pip install -r requirements_dev.txt`
 
-3. `pytest`
+3. `python -m pytest`
 
 ## Formatting
 

@@ -17,7 +17,6 @@ class Calendar:
             "title": title,
             "description": description,
         }
-        import json
         r = requests.post(self.app_script_url, json=body)
 
         if "Exception:" in r.text:

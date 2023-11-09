@@ -65,3 +65,83 @@ def test_event_date_parsing_works_for_events_next_year():
     assert date.month == 1
     assert date.day == 21
     assert title == "Concert"
+
+
+def test_event_storage_creates_new_event():
+    storage = events_manager.EventStorage()
+    created_event = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="1/1 Post New Years",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        first_message="Come to\nhell!!!",
+    )
+    assert "1" in storage.events_by_id
+    assert len(storage.events) == 1
+    assert storage.events[0] == created_event
+    assert storage.events[0].event_id == "1"
+    assert storage.events[0].title == "Post New Years"
+    assert storage.events[0].description == "Come to\nhell!!!"
+    assert storage.events[0].date == datetime.date(2023, 1, 1)
+
+
+def test_event_storage_returns_none_on_duplicate_event():
+    storage = events_manager.EventStorage()
+    created_event = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="1/1 Post New Years",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        first_message="Come to\nhell!!!",
+    )
+    assert created_event is not None
+
+    event_again = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="1/1 Post New Years",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        first_message="Come to\nhell!!!",
+    )
+    assert event_again is None
+
+
+def test_event_storage_returns_none_on_unparsable_event():
+    storage = events_manager.EventStorage()
+    event = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="meta",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        first_message="Not an event",
+    )
+    assert event is None
+
+
+STORAGE_WITH_EXISTING_EVENTS = """\
+{"event_id": "1", "title": "Hi", "description": "come to my event", "date": "2022-01-01"}
+{"event_id": "2", "title": "Bye", "description": "that was fun", "date": "2022-02-01"}
+"""
+
+
+def test_flat_file_storage_loads_existing_events(tmp_path):
+    db_path = tmp_path / "db.json"
+    db_path.write_text(STORAGE_WITH_EXISTING_EVENTS)
+
+    storage = events_manager.NewlineDelimitedJsonEventStorage(db_path)
+    assert len(storage.events) == 2
+    assert storage.events[0].title == "Hi"
+    assert storage.events[1].title == "Bye"
+
+
+def test_flat_file_storage_writes_event_to_file(tmp_path):
+    db_path = tmp_path / "db.json"
+    storage = events_manager.NewlineDelimitedJsonEventStorage(db_path)
+
+    event = storage.try_create_new_event_from_thread(
+        thread_id="1",
+        thread_title="1/1 Post New Years",
+        thread_creation_date=datetime.date(2022, 12, 20),
+        first_message="Come to\nhell!!!",
+    )
+    output_file = db_path.read_text()
+    assert (
+        output_file
+        == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!","date":"2023-01-01"}\n'
+    )

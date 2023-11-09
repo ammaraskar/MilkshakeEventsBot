@@ -1,5 +1,6 @@
 import datetime
 import traceback
+import json
 from pydantic import BaseModel
 
 
@@ -17,45 +18,6 @@ def create_event_object_from_thread(
 ):
     (date, title) = try_get_date_title_for_event(thread_creation_date, thread_title)
     return Event(event_id=thread_id, title=title, description=first_message, date=date)
-
-
-class EventStorage:
-    def __init__(self):
-        self.events_by_id = {}
-        self.events = []
-
-    def try_create_new_event_from_thread(
-        self, thread_id, thread_title, thread_creation_date, first_message
-    ):
-        """Creates a new event based on the thread's details. If successful,
-        returns the Event object. If the event already exists or the thread
-        is not parseable to an event, returns None."""
-        if thread_id in self.events_by_id:
-            return None
-        print(f"Trying to create new event:")
-        print(f"  Thread ID: {thread_id}")
-        print(f"      Title: {thread_title}")
-        print(f"   Creation: {thread_creation_date}")
-
-        try:
-            event_object = create_event_object_from_thread(
-                thread_id, thread_title, thread_creation_date, first_message
-            )
-            self.add_event(event_object)
-        except ValueError:
-            print(f"ValueError while creating new event")
-            traceback.print_exc()
-            return None
-
-    def add_event(self, event):
-        self.events_by_id[event.event_id] = event
-        self.events.append(event)
-
-
-def maybe_create_new_event_from_thread(thread, first_message):
-    print(f"  Thread: {thread.name}")
-    print(f"    msg: {first_message}")
-    print(f"       : {first_message.content}")
 
 
 def extract_day_and_month_from_title(title: str):
@@ -97,3 +59,63 @@ def try_get_date_title_for_event(thread_creation_date: datetime.date, title: str
         event_date = datetime.date(thread_creation_date.year + 1, month, day)
 
     return event_date, title
+
+
+class EventStorage:
+    def __init__(self):
+        self.events_by_id = {}
+        self.events = []
+
+    def try_create_new_event_from_thread(
+        self, thread_id, thread_title, thread_creation_date, first_message
+    ):
+        """Creates a new event based on the thread's details. If successful,
+        returns the Event object. If the event already exists or the thread
+        is not parseable to an event, returns None."""
+        if thread_id in self.events_by_id:
+            return None
+        print(f"Trying to create new event:")
+        print(f"  Thread ID: {thread_id}")
+        print(f"      Title: {thread_title}")
+        print(f"   Creation: {thread_creation_date}")
+
+        try:
+            event_object = create_event_object_from_thread(
+                thread_id, thread_title, thread_creation_date, first_message
+            )
+            self.add_event(event_object)
+            return event_object
+        except ValueError:
+            print(f"ValueError while creating new event")
+            traceback.print_exc()
+            return None
+
+    def add_event(self, event):
+        self.events_by_id[event.event_id] = event
+        self.events.append(event)
+
+
+class NewlineDelimitedJsonEventStorage(EventStorage):
+    """Stores events persistently in a flat file containing json objects
+    delimted by newlines."""
+
+    def __init__(self, file_path):
+        super().__init__()
+
+        self.file = open(file_path, "a+")
+        self.file.seek(0)
+        for line in self.file:
+            # Skip empty lines.
+            if line.strip() == "":
+                continue
+
+            event = Event.model_validate_json(line)
+            self.events_by_id[event.event_id] = event
+            self.events.append(event)
+
+    def add_event(self, event):
+        # Write and flush to the flat file.
+        self.file.write(event.model_dump_json())
+        self.file.write("\n")
+        self.file.flush()
+        super().add_event(event)

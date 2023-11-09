@@ -17,7 +17,11 @@ class Calendar:
             "title": title,
             "description": description,
         }
+        import json
         r = requests.post(self.app_script_url, json=body)
+
+        if "Exception:" in r.text:
+            raise RuntimeError(f"Exception in apps script: {r.text}")
 
         response = r.json()
         if "error" in response:

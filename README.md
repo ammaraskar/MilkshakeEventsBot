@@ -40,4 +40,4 @@ secrets.
 
 ## Formatting
 
-We format with `black`.
+We format with `black`. This is checked on the CI.

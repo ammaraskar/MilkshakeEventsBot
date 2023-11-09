@@ -24,6 +24,7 @@ async def test_launching_bot_and_guilds_available_event_creates_event():
     events_forum.threads[0].name = "1/1 My Event"
     events_forum.threads[0].created_at = datetime.datetime(2022, 1, 1)
     message = MagicMock()
+    message.jump_url = "https://discord.com/foo/bar"
     message.content = "First message"
     events_forum.threads[0].fetch_message = AsyncMock(return_value=message)
 
@@ -38,7 +39,11 @@ async def test_launching_bot_and_guilds_available_event_creates_event():
         thread_id="1",
         thread_title="1/1 My Event",
         thread_creation_date=datetime.date(2022, 1, 1),
-        first_message="First message",
+        description="""\
+First message
+
+https://discord.com/foo/bar
+Discord Thread ID: 1""",
     )
 
 
@@ -67,6 +72,7 @@ async def test_thread_creation_in_correct_forum_creates_event():
     thread.created_at = datetime.datetime(2022, 1, 1)
     message = MagicMock()
     message.content = "First message"
+    message.jump_url = "https://discord.com/foo/bar"
     thread.fetch_message = AsyncMock(return_value=message)
 
     mock_storage = MagicMock()
@@ -77,5 +83,9 @@ async def test_thread_creation_in_correct_forum_creates_event():
         thread_id="1",
         thread_title="1/1 My Event",
         thread_creation_date=datetime.date(2022, 1, 1),
-        first_message="First message",
+        description="""\
+First message
+
+https://discord.com/foo/bar
+Discord Thread ID: 1""",
     )

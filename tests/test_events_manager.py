@@ -73,14 +73,14 @@ def test_event_storage_creates_new_event():
         thread_id="1",
         thread_title="1/1 Post New Years",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="Come to\nhell!!!",
+        description="Come to\nhell!!!",
     )
     assert "1" in storage.events_by_id
     assert len(storage.events) == 1
     assert storage.events[0] == created_event
     assert storage.events[0].event_id == "1"
     assert storage.events[0].title == "Post New Years"
-    assert storage.events[0].description == "Come to\nhell!!!\n\nDiscord Thread ID: 1"
+    assert storage.events[0].description == "Come to\nhell!!!"
     assert storage.events[0].date == datetime.date(2023, 1, 1)
 
 
@@ -90,7 +90,7 @@ def test_event_storage_returns_none_on_duplicate_event():
         thread_id="1",
         thread_title="1/1 Post New Years",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="Come to\nhell!!!",
+        description="Come to\nhell!!!",
     )
     assert created_event is not None
 
@@ -98,7 +98,7 @@ def test_event_storage_returns_none_on_duplicate_event():
         thread_id="1",
         thread_title="1/1 No No No",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="My bad",
+        description="My bad",
     )
     # Should just return the initial event. In the future this may update the
     # existing event.
@@ -111,7 +111,7 @@ def test_event_storage_returns_none_on_unparsable_event():
         thread_id="1",
         thread_title="meta",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="Not an event",
+        description="Not an event",
     )
     assert event is None
 
@@ -139,10 +139,10 @@ def test_flat_file_storage_writes_event_to_file(tmp_path):
         thread_id="1",
         thread_title="1/1 Post New Years",
         thread_creation_date=datetime.date(2022, 12, 20),
-        first_message="Come to\nhell!!!",
+        description="Come to\nhell!!!",
     )
     output_file = db_path.read_text()
     assert (
         output_file
-        == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!\\n\\nDiscord Thread ID: 1","date":"2023-01-01","calendar_id":null}\n'
+        == '{"event_id":"1","title":"Post New Years","description":"Come to\\nhell!!!","date":"2023-01-01","calendar_id":null}\n'
     )

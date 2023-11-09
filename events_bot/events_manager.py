@@ -17,13 +17,13 @@ class Event(BaseModel):
 
 
 def create_event_object_from_thread(
-    thread_id, thread_title, thread_creation_date, first_message
+    thread_id, thread_title, thread_creation_date, description
 ):
     (date, title) = try_get_date_title_for_event(thread_creation_date, thread_title)
     return Event(
         event_id=thread_id,
         title=title,
-        description=first_message + f"\n\nDiscord Thread ID: {thread_id}",
+        description=description,
         date=date,
     )
 
@@ -75,7 +75,7 @@ class EventStorage:
         self.events = []
 
     def try_create_new_event_from_thread(
-        self, thread_id, thread_title, thread_creation_date, first_message
+        self, thread_id, thread_title, thread_creation_date, description
     ):
         """Creates a new event based on the thread's details. If successful,
         returns the Event object. If the event already exists, returns the
@@ -92,7 +92,7 @@ class EventStorage:
 
         try:
             event_object = create_event_object_from_thread(
-                thread_id, thread_title, thread_creation_date, first_message
+                thread_id, thread_title, thread_creation_date, description
             )
             self.add_event(event_object)
             return event_object

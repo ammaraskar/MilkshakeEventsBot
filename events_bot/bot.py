@@ -42,11 +42,21 @@ class EventsBotClient(discord.Client):
         # Get the first message of the thread. And yup, the first message's id
         # is the same as the thread id. ¯\_(ツ)_/¯
         first_message = await thread.fetch_message(thread.id)
+
+        # Format the event's description. Start with the message for the thread
+        # then add a link to the thread as well as the thread ID for our own
+        # tracking purposes.
+        description = f"""\
+{first_message.content}
+
+{first_message.jump_url}
+Discord Thread ID: {thread.id}"""
+
         event = self.event_storage.try_create_new_event_from_thread(
             thread_id=str(thread.id),
             thread_title=thread.name,
             thread_creation_date=thread.created_at.date(),
-            first_message=first_message.content,
+            description=description,
         )
         if event is not None:
             print(f"Made new event: {event}")

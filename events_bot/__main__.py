@@ -6,5 +6,6 @@ with open("secrets.json", "r") as f:
     secrets = json.load(f)
 
 
-client = bot.EventsBotClient(events_manager.NewlineDelimitedJsonEventStorage())
+event_storage = events_manager.NewlineDelimitedJsonEventStorage("db.json")
+client = bot.EventsBotClient(event_storage=event_storage)
 client.run(secrets["DISCORD_BOT_TOKEN"])

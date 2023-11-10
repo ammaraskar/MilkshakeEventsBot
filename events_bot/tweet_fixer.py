@@ -38,7 +38,7 @@ async def on_message_handler(message):
         except ValueError:
             # Just paste the fxtwitter link as a fallback.
             embeds = []
-            msg_content = links[0]
+            msg_content = f"[.]({links[0]})"
 
         print(f"+ Replying with embed")
         await message.reply(content=msg_content, embeds=embeds)

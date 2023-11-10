@@ -76,6 +76,7 @@ FX_TWITTER_WITH_VIDEO = """\
 roperty="og:video:height" content="498"/><meta property="og:video:width" content="296"/><meta property="og:video:type" content="video/mp4"/><meta property="twitter:image" content="0"/><meta property="og:title" content="AriZona Iced Tea (@DrinkAriZona)"/><meta property="og:description" content="AriZona CEO"/><meta property="og:site_name" content="FixTweet / FixupX"/><meta property="twitter:card" content="player"/><link rel="alternate" href="https://fxtwitter.com/owoembed?text=AriZona%20CEO&status=1722774379371823446&author=DrinkAriZona" type="application/json+oembed" title="AriZona Iced Tea"></head><body></body></html>
 """
 
+
 def test_parses_into_embed_with_video_raises():
     with pytest.raises(ValueError):
         tweet_fixer.parse_embed_from_fx_twitter_page(FX_TWITTER_WITH_VIDEO)

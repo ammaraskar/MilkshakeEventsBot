@@ -32,10 +32,16 @@ async def on_message_handler(message):
     # Only handle the first link for now.
     async with httpx.AsyncClient() as client:
         r = await client.get(links[0])
-        embed = parse_embed_from_fx_twitter_page(r.text)
+        try:
+            msg_content = None
+            embeds = [parse_embed_from_fx_twitter_page(r.text)]
+        except ValueError:
+            # Just paste the fxtwitter link as a fallback.
+            embeds = []
+            msg_content = links[0]
 
         print(f"+ Replying with embed")
-        await message.reply(embeds=[embed])
+        await message.reply(content=msg_content, embeds=embeds)
 
 
 def parse_embed_from_fx_twitter_page(page_body) -> discord.Embed:
@@ -62,6 +68,12 @@ def parse_embed_from_fx_twitter_page(page_body) -> discord.Embed:
     image = soup.find("meta", {"property": "og:image", "content": True})
     if image is not None:
         embed.set_image(url=image["content"])
+
+    video = soup.find("meta", {"property": "og:video", "content": True})
+    if video is not None:
+        # If there is a video, we need to just send the fxtwitter link :(
+        # No API embeds for videos.
+        raise ValueError("Can't handle video embeds")
 
     return embed
 

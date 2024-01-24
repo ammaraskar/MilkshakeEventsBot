@@ -70,6 +70,12 @@ Discord Thread ID: {thread.id}"""
             description=description,
         )
         if event is None:
+            # Send a message to the thread to tell the user we were unable to
+            # figure out their event's details.
+            await thread.send(
+                content="I couldn't create an event for your "
+                "thread 😢 I probably couldn't understand the date format."
+            )
             return
         print(f"Potential new event: {event}")
         if event.calendar_id is not None:
@@ -89,6 +95,13 @@ Discord Thread ID: {thread.id}"""
             event.calendar_id = calendar_id
 
             self.event_storage.store_events()
+            # Send a friendly message to the thread to indicate we picked up
+            # their event.
+            await thread.send(
+                content=f"Event created!"
+                "\n\tTitle: {event.title}"
+                "\n\tDate: {event.date}"
+            )
         except requests.RequestException:
             print("Error adding event to calendar")
             traceback.print_exc()

@@ -1,6 +1,7 @@
 import datetime
 import traceback
-import json
+from dateutil.parser import parse as parseDate
+from dateutil.parser import ParserError
 from pydantic import BaseModel
 from typing import Optional
 
@@ -28,9 +29,9 @@ def create_event_object_from_thread(
     )
 
 
-def extract_day_and_month_from_title(title: str):
-    """Returns a tuple of (day, month, title) e.g (11, 11, "foo")
-    for the event foo on 11th November.
+def extract_date_from_title(title: str, thread_creation_date: datetime.date):
+    """Returns a tuple of (date, title) e.g (date(2024, 11, 11), "foo")
+    for the event foo on November 11th 2024.
 
     This is meant to be a lenient parser for people writing titles like:
     * 11/11 Come to my coding party
@@ -43,14 +44,13 @@ def extract_day_and_month_from_title(title: str):
     """
     # Split on whitespace with max splits of 1 to get the first token.
     possible_date, rest_of_title = title.split(None, 1)
-
-    # Only valid date delimeter for now is slash.
-    month, day = possible_date.split("/")
-    month, day = int(month), int(day)
-    if month < 1 or month > 12 or day < 1 or day > 31:
-        raise ValueError(f"Date out of range for: {possible_date}")
-
-    return (day, month, rest_of_title)
+    try:
+        # `default=thread_creation_date` assumes that unspecified date
+        # components are the same as the thread's creation date.
+        date = parseDate(possible_date, default=thread_creation_date)
+        return (date, rest_of_title)
+    except ParserError:
+        raise ValueError(f'Could not parse "{possible_date}" as a date.')
 
 
 def try_get_date_title_for_event(thread_creation_date: datetime.date, title: str):
@@ -58,13 +58,19 @@ def try_get_date_title_for_event(thread_creation_date: datetime.date, title: str
     thread mentioning it was created.
 
     Throws ValueError if the title cannot be parsed."""
-    (day, month, title) = extract_day_and_month_from_title(title)
+    (event_date, title) = extract_date_from_title(title, thread_creation_date)
 
-    event_date = datetime.date(thread_creation_date.year, month, day)
-    # If the event is for a day/month that's already passed in the current year,
-    # it is most likely for the next year!
+    # If the specified year is less than the thread's creation date, update to
+    # the thread's creation date as that was likely a mistake (and we won't
+    # deal with events in the past anyway).
+    if event_date.year < thread_creation_date.year:
+        event_date = event_date.replace(year=thread_creation_date.year)
+
+    # If the date has already happened even after passing the above check then
+    # increment the year. It's likely the user either didn't specify the year
+    # and they meant to make an event for next year using a format like (10/24)
     if event_date < thread_creation_date:
-        event_date = datetime.date(thread_creation_date.year + 1, month, day)
+        event_date = event_date.replace(year=thread_creation_date.year + 1)
 
     return event_date, title
 

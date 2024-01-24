@@ -2,44 +2,55 @@ from events_bot import events_manager
 import datetime
 import pytest
 
+default_thread_creation_date = datetime.date(2022, 1, 1)
+
+
+def get_current_year():
+    return datetime.date.today().year
+
 
 def test_title_parsing_works():
-    (day, month, title) = events_manager.extract_day_and_month_from_title(
-        "11/11 Come to my coding party"
+    (date, title) = events_manager.extract_date_from_title(
+        "11/11 Come to my coding party", default_thread_creation_date
     )
-    assert day == 11
-    assert month == 11
+    assert date == datetime.date(2022, 11, 11)
     assert title == "Come to my coding party"
 
-    (day, month, title) = events_manager.extract_day_and_month_from_title(
-        "10/28 X // Y"
+    (date, title) = events_manager.extract_date_from_title(
+        "10/28 X // Y", default_thread_creation_date
     )
-    assert day == 28
-    assert month == 10
+    assert date == datetime.date(2022, 10, 28)
     assert title == "X // Y"
 
-    (day, month, title) = events_manager.extract_day_and_month_from_title("9/23 Play")
-    assert day == 23
-    assert month == 9
+    (date, title) = events_manager.extract_date_from_title(
+        "9/23 Play", default_thread_creation_date
+    )
+    assert date == datetime.date(2022, 9, 23)
     assert title == "Play"
 
-    (day, month, title) = events_manager.extract_day_and_month_from_title(
-        "1/1      !! Whoops a lot of spaces !!"
+    (date, title) = events_manager.extract_date_from_title(
+        "1/1      !! Whoops a lot of spaces !!", default_thread_creation_date
     )
-    assert day == 1
-    assert month == 1
+    assert date == datetime.date(2022, 1, 1)
     assert title == "!! Whoops a lot of spaces !!"
+
+    (date, title) = events_manager.extract_date_from_title(
+        "2028/07/04 Event with specified year",
+        # If a year is specified, the default won't kick in.
+        default_thread_creation_date,
+    )
+    assert date == datetime.date(2028, 7, 4)
+    assert title == "Event with specified year"
 
 
 def test_title_parsing_fails_on_wrong_formats():
     with pytest.raises(ValueError):
-        events_manager.extract_day_and_month_from_title("boo")
+        events_manager.extract_date_from_title("boo", default_thread_creation_date)
 
     with pytest.raises(ValueError):
-        events_manager.extract_day_and_month_from_title("0/0 Pranked")
-
-    with pytest.raises(ValueError):
-        events_manager.extract_day_and_month_from_title("1-2 Pranked")
+        events_manager.extract_date_from_title(
+            "0/0 Pranked", default_thread_creation_date
+        )
 
 
 def test_event_date_parsing_works():
@@ -60,18 +71,28 @@ def test_event_date_parsing_works_for_events_next_year():
     (date, title) = events_manager.try_get_date_title_for_event(
         thread_time, "1/21 Concert"
     )
-
     assert date.year == 2023
     assert date.month == 1
     assert date.day == 21
     assert title == "Concert"
+
+    # A Thread that specifies a year that already happened. This is more likely
+    # to happen around the new year.
+    thread_time = datetime.date(2022, 1, 22)
+    (date, title) = events_manager.try_get_date_title_for_event(
+        thread_time, "2021-04-10 The Beths"
+    )
+    assert date.year == 2022
+    assert date.month == 4
+    assert date.day == 10
+    assert title == "The Beths"
 
 
 def test_event_storage_creates_new_event():
     storage = events_manager.EventStorage()
     created_event = storage.try_create_new_event_from_thread(
         thread_id="1",
-        thread_title="1/1 Post New Years",
+        thread_title="1/1/23 Post New Years",
         thread_creation_date=datetime.date(2022, 12, 20),
         description="Come to\nhell!!!",
     )

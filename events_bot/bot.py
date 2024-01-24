@@ -97,8 +97,8 @@ Discord Thread ID: {thread.id}"""
             # their event.
             await thread.send(
                 content=f"Event created!"
-                "\n\tTitle: {event.title}"
-                "\n\tDate: {event.date}"
+                f"\n\tTitle: {event.title}"
+                f"\n\tDate: {event.date}"
             )
         except requests.RequestException:
             print("Error adding event to calendar")

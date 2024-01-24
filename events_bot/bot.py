@@ -70,12 +70,10 @@ Discord Thread ID: {thread.id}"""
             description=description,
         )
         if event is None:
-            # Send a message to the thread to tell the user we were unable to
-            # figure out their event's details.
-            await thread.send(
-                content="I couldn't create an event for your "
-                "thread 😢 I probably couldn't understand the date format."
-            )
+            # React to the first message in the thread if we were unable to
+            # figure out the event's details.
+            if thread.starter_message:
+                await thread.starter_message.add_reaction("❌")
             return
         print(f"Potential new event: {event}")
         if event.calendar_id is not None:
